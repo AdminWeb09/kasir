@@ -691,3 +691,90 @@ export function subscribeSupabaseRealtime(callbacks: {
     return () => {};
   }
 }
+
+/**
+ * Konversi base64/dataURL ke Blob untuk upload file
+ */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(',');
+  const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+  const binary = atob(parts[1]);
+  const array = [];
+  for (let i = 0; i < binary.length; i++) {
+    array.push(binary.charCodeAt(i));
+  }
+  return new Blob([new Uint8Array(array)], { type: mime });
+}
+
+/**
+ * Upload foto produk ke Supabase Storage (bucket: 'product-images')
+ */
+export async function uploadProductImageToSupabase(
+  input: File | Blob | string,
+  preferredName?: string
+): Promise<{ success: boolean; publicUrl?: string; message?: string }> {
+  const client = getSupabaseClient();
+  if (!client) {
+    return { success: false, message: 'Supabase belum dikonfigurasi.' };
+  }
+
+  try {
+    let fileBody: Blob;
+    let contentType = 'image/jpeg';
+    let fileExt = 'jpg';
+
+    if (typeof input === 'string') {
+      if (input.startsWith('data:')) {
+        fileBody = dataUrlToBlob(input);
+        contentType = fileBody.type || 'image/jpeg';
+        fileExt = contentType.split('/')[1] || 'jpg';
+      } else {
+        // Sudah berupa URL
+        return { success: true, publicUrl: input };
+      }
+    } else {
+      fileBody = input;
+      contentType = input.type || 'image/jpeg';
+      fileExt = input.type ? input.type.split('/')[1] : 'jpg';
+    }
+
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 7);
+    const sanitizedName = preferredName
+      ? preferredName.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 30)
+      : 'prod';
+    const filePath = `products/${sanitizedName}_${timestamp}_${randomStr}.${fileExt}`;
+
+    // Upload ke bucket 'product-images'
+    const { data: uploadData, error: uploadError } = await client.storage
+      .from('product-images')
+      .upload(filePath, fileBody, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType,
+      });
+
+    if (uploadError) {
+      console.warn('Gagal upload ke Supabase Storage:', uploadError.message);
+      return { success: false, message: uploadError.message };
+    }
+
+    // Ambil URL Publik
+    const { data: urlData } = client.storage
+      .from('product-images')
+      .getPublicUrl(uploadData.path);
+
+    return {
+      success: true,
+      publicUrl: urlData.publicUrl,
+      message: 'Foto berhasil disimpan di Supabase Storage!',
+    };
+  } catch (err: any) {
+    console.error('Error uploading product image to Supabase:', err);
+    return { 
+      success: false, 
+      message: err.message || 'Gagal mengunggah foto ke Supabase Storage' 
+    };
+  }
+}
+

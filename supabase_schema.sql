@@ -228,3 +228,50 @@ VALUES
   (11, 4, 'PRW-002', '8994002200112', 'Pepsodent Pencegah Gigi Berlubang 190g', 9800.00, 13500.00, 18, 6, 'tube', true),
   (12, 5, 'RKK-001', '8995001100123', 'Sampoerna A Mild 16 Batang', 31000.00, 35000.00, 25, 10, 'bungkus', true)
 ON CONFLICT (code) DO NOTHING;
+
+-- ====================================================================
+-- 10. SUPABASE STORAGE (PENYIMPANAN FOTO PRODUK)
+-- ====================================================================
+-- Buat bucket penyimpanan foto produk public (product-images)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'product-images',
+  'product-images',
+  true,
+  5242880, -- 5MB limit
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Kebijakan Akses (RLS) untuk bucket product-images
+DO $$
+BEGIN
+  -- Select Policy
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Public read product-images'
+  ) THEN
+    CREATE POLICY "Public read product-images" ON storage.objects FOR SELECT USING (bucket_id = 'product-images');
+  END IF;
+
+  -- Insert Policy
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Public upload product-images'
+  ) THEN
+    CREATE POLICY "Public upload product-images" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'product-images');
+  END IF;
+
+  -- Update Policy
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Public update product-images'
+  ) THEN
+    CREATE POLICY "Public update product-images" ON storage.objects FOR UPDATE USING (bucket_id = 'product-images');
+  END IF;
+
+  -- Delete Policy
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Public delete product-images'
+  ) THEN
+    CREATE POLICY "Public delete product-images" ON storage.objects FOR DELETE USING (bucket_id = 'product-images');
+  END IF;
+END $$;
+

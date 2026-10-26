@@ -299,7 +299,7 @@ export const StoreSettingsView: React.FC<StoreSettingsViewProps> = ({
                 Buka <strong className="text-slate-800">Supabase Dashboard</strong> &gt; buat project baru (atau gunakan project yang ada).
               </li>
               <li>
-                Masuk ke menu <strong className="text-slate-800">SQL Editor</strong>, klik tombol <span className="font-semibold text-indigo-600">"Salin SQL Schema"</span> di atas, tempel kode tersebut lalu klik <strong className="text-slate-800">"Run"</strong> untuk membuat tabel otomatis.
+                Masuk ke menu <strong className="text-slate-800">SQL Editor</strong>, klik tombol <span className="font-semibold text-indigo-600">"Salin SQL Schema"</span> di atas, tempel kode tersebut lalu klik <strong className="text-slate-800">"Run"</strong> untuk membuat tabel database dan bucket penyimpanan foto produk (<code className="bg-slate-200 px-1 py-0.5 rounded text-[10px]">product-images</code>) secara otomatis.
               </li>
               <li>
                 Buka <strong className="text-slate-800">Project Settings &gt; API</strong>, salin <strong className="text-slate-800">Project URL</strong> dan <strong className="text-slate-800">anon/public key</strong>, lalu tempel di formulir di bawah ini.

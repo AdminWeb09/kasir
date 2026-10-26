@@ -1,0 +1,6 @@
+{
+  "name": "Sistem POS Kasir Modern",
+  "description": "Aplikasi web Point of Sale (Kasir) & Admin multi-level dengan cetak nota thermal 58mm/80mm, manajemen stok, laporan omzet & laba, dan barcode scanner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

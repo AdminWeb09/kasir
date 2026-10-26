@@ -8,32 +8,45 @@ import {
   StockMovement, 
   ActivityLog 
 } from '../types';
+import { DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '../config/supabaseConfig';
 
-// Get credentials from Vite env or localStorage
-const getEnvOrStorage = (key: string, storageKey: string): string => {
+// Get credentials with fallback: Env Vars -> Permanent Config -> localStorage
+const getEnvOrStorage = (envKey: string, storageKey: string, defaultVal: string): string => {
+  // 1. Environment variables (Vite / Vercel)
+  const envVal = ((import.meta.env[envKey] as string) || '').trim();
+  if (envVal) return envVal;
+
+  // 2. Permanent config in src/config/supabaseConfig.ts
+  if (defaultVal && defaultVal.trim()) return defaultVal.trim();
+
+  // 3. Stored in localStorage
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem(storageKey);
     if (saved && saved.trim()) return saved.trim();
   }
-  const envVal = (import.meta.env[key] as string) || '';
-  return envVal.trim();
+
+  return '';
 };
 
 let cachedClient: SupabaseClient | null = null;
 let cachedConfigKey = '';
 
 export const getSupabaseConfig = () => {
-  const url = getEnvOrStorage('VITE_SUPABASE_URL', 'supabase_custom_url');
-  const anonKey = getEnvOrStorage('VITE_SUPABASE_ANON_KEY', 'supabase_custom_anon_key');
+  const url = getEnvOrStorage('VITE_SUPABASE_URL', 'supabase_custom_url', DEFAULT_SUPABASE_URL);
+  const anonKey = getEnvOrStorage('VITE_SUPABASE_ANON_KEY', 'supabase_custom_anon_key', DEFAULT_SUPABASE_ANON_KEY);
   const isFromEnv = Boolean(
     ((import.meta.env.VITE_SUPABASE_URL as string) || '').trim() &&
     ((import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '').trim()
+  );
+  const isFromPermanentConfig = Boolean(
+    DEFAULT_SUPABASE_URL.trim() && DEFAULT_SUPABASE_ANON_KEY.trim()
   );
   return { 
     url, 
     anonKey, 
     isConfigured: Boolean(url && anonKey),
-    isFromEnv 
+    isFromEnv,
+    isFromPermanentConfig,
   };
 };
 

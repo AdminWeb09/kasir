@@ -15,7 +15,9 @@ import {
   Check, 
   FileCode, 
   Unplug, 
-  HelpCircle 
+  HelpCircle,
+  KeyRound,
+  ShieldCheck 
 } from 'lucide-react';
 import { 
   getSupabaseConfig, 
@@ -59,6 +61,8 @@ export const StoreSettingsView: React.FC<StoreSettingsViewProps> = ({
   const [syncingPush, setSyncingPush] = useState(false);
   const [actionNotice, setActionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [copiedSql, setCopiedSql] = useState(false);
+  const [copiedConfigCode, setCopiedConfigCode] = useState(false);
+  const [copiedVercelEnv, setCopiedVercelEnv] = useState(false);
   const [showSqlPreview, setShowSqlPreview] = useState(false);
 
   useEffect(() => {
@@ -196,6 +200,28 @@ export const StoreSettingsView: React.FC<StoreSettingsViewProps> = ({
     setTimeout(() => setCopiedSql(false), 2500);
   };
 
+  const handleCopyPermanentConfigCode = () => {
+    const code = `/**
+ * KONFIGURASI PERMANEN SUPABASE
+ * Nilai ini otomatis aktif di SEMUA perangkat, HP/APK,
+ * dan deployment Vercel tanpa perlu memasukkan ulang.
+ */
+
+export const DEFAULT_SUPABASE_URL = '${supabaseUrl.trim()}';
+export const DEFAULT_SUPABASE_ANON_KEY = '${supabaseKey.trim()}';
+`;
+    navigator.clipboard.writeText(code);
+    setCopiedConfigCode(true);
+    setTimeout(() => setCopiedConfigCode(false), 2500);
+  };
+
+  const handleCopyVercelEnv = () => {
+    const envText = `VITE_SUPABASE_URL=${supabaseUrl.trim()}\nVITE_SUPABASE_ANON_KEY=${supabaseKey.trim()}`;
+    navigator.clipboard.writeText(envText);
+    setCopiedVercelEnv(true);
+    setTimeout(() => setCopiedVercelEnv(false), 2500);
+  };
+
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
       {/* Top Header */}
@@ -306,6 +332,61 @@ export const StoreSettingsView: React.FC<StoreSettingsViewProps> = ({
               </li>
             </ol>
           </div>
+
+          {/* Permanent Config Banner / Helper */}
+          {config.isFromPermanentConfig ? (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs flex items-center gap-2.5 text-emerald-800">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div>
+                <p className="font-bold">Konfigurasi Permanen Aktif (Otomatis Terhubung)</p>
+                <p className="text-[11px] text-emerald-700">
+                  Supabase telah tersimpan di kode sumber (<code className="font-mono bg-emerald-100 px-1 py-0.5 rounded">src/config/supabaseConfig.ts</code>). Semua HP kasir, laptop, dan deployment Vercel otomatis terhubung tanpa perlu memasukkan ulang.
+                </p>
+              </div>
+            </div>
+          ) : config.isFromEnv ? (
+            <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs flex items-center gap-2.5 text-indigo-800">
+              <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0" />
+              <div>
+                <p className="font-bold">Konfigurasi Environment Variable Aktif</p>
+                <p className="text-[11px] text-indigo-700">
+                  Aplikasi terhubung via <code className="font-mono bg-indigo-100 px-1 py-0.5 rounded">VITE_SUPABASE_URL</code> dari environment Vercel. Tidak perlu memasukkan ulang.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-2">
+              <div className="flex items-center gap-2 font-bold text-amber-800">
+                <KeyRound className="w-4 h-4 text-amber-600" />
+                <span>Agar Tidak Perlu Memasukkan Ulang URL & Key di Perangkat Lain / Vercel:</span>
+              </div>
+              <p className="text-[11px] text-amber-700 leading-relaxed">
+                Saat ini kredensial disimpan di memori browser ini. Agar saat aplikasi dibuka di HP kasir lain atau di-deploy ke Vercel otomatis langsung terhubung tanpa mengetik ulang:
+              </p>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCopyPermanentConfigCode}
+                  disabled={!supabaseUrl.trim() || !supabaseKey.trim()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs rounded-lg transition-all disabled:opacity-50"
+                  title="Salin isi file src/config/supabaseConfig.ts dengan kredensial ini"
+                >
+                  {copiedConfigCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedConfigCode ? 'Kode Tersalin!' : 'Salin Kode src/config/supabaseConfig.ts'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyVercelEnv}
+                  disabled={!supabaseUrl.trim() || !supabaseKey.trim()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs rounded-lg transition-all disabled:opacity-50"
+                  title="Salin format Environment Variable untuk Vercel Project Settings"
+                >
+                  {copiedVercelEnv ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedVercelEnv ? 'Env Tersalin!' : 'Salin Format Vercel Environment (.env)'}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSaveSupabaseConfig} className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
